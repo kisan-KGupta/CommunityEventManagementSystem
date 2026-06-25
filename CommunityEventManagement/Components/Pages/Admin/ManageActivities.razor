@@ -1,0 +1,186 @@
+@page "/admin/activities"
+@using Microsoft.AspNetCore.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject IActivityService ActivityService
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Activity Form -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-primary">@(selectedActivity.Id == 0 ? "Add Activity" : "Edit Activity")</h4>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success">@successMessage</div>
+                }
+
+                <EditForm Model="selectedActivity" OnValidSubmit="HandleSubmit" FormName="ManageActivitiesForm">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Activity Name</label>
+                        <InputText class="form-control" @bind-Value="selectedActivity.Name" />
+                        <ValidationMessage For="@(() => selectedActivity.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Activity Type</label>
+                        <InputSelect class="form-select" @bind-Value="selectedActivity.Type">
+                            <option value="">Select Type...</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Talk">Talk</option>
+                            <option value="Game">Game</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => selectedActivity.Type)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <InputTextArea class="form-control" rows="3" @bind-Value="selectedActivity.Description" />
+                        <ValidationMessage For="@(() => selectedActivity.Description)" />
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            @(selectedActivity.Id == 0 ? "Save Activity" : "Update Activity")
+                        </button>
+                        @if (selectedActivity.Id != 0)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="ResetForm">Cancel</button>
+                        }
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <!-- Activities List -->
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-secondary">Activities List</h4>
+                
+                @if (activitiesList.Count == 0)
+                {
+                    <p class="text-muted">No activities registered yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Activity Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var act in activitiesList)
+                                {
+                                    <tr>
+                                        <td><strong>@act.Name</strong></td>
+                                        <td><span class="badge bg-info text-dark">@act.Type</span></td>
+                                        <td><span class="small text-muted">@act.Description</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => EditActivity(act)">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteActivity(act.Id)">Delete</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ActivityViewModel> activitiesList = new();
+    private ActivityViewModel selectedActivity = new();
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        activitiesList = await ActivityService.GetAllAsync();
+    }
+
+    private void EditActivity(ActivityViewModel model)
+    {
+        selectedActivity = new ActivityViewModel
+        {
+            Id = model.Id,
+            Name = model.Name,
+            Type = model.Type,
+            Description = model.Description
+        };
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private async Task DeleteActivity(int id)
+    {
+        try
+        {
+            await ActivityService.DeleteAsync(id);
+            successMessage = "Activity deleted successfully.";
+            selectedActivity = new();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = null;
+
+            if (selectedActivity.Id == 0)
+            {
+                await ActivityService.AddAsync(selectedActivity);
+                successMessage = "Activity created successfully.";
+            }
+            else
+            {
+                await ActivityService.UpdateAsync(selectedActivity);
+                successMessage = "Activity updated successfully.";
+            }
+
+            selectedActivity = new();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void ResetForm()
+    {
+        selectedActivity = new();
+        errorMessage = null;
+        successMessage = null;
+    }
+}

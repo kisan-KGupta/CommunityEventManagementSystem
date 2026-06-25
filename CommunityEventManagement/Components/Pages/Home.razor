@@ -1,0 +1,85 @@
+@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@rendermode InteractiveServer
+<div class="container mt-4">
+    <div class="jumbotron p-5 mb-4 bg-light rounded-3 shadow-sm" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+        <h1 class="display-4 fw-bold">Community Event Management</h1>
+        <p class="lead">Plan, organize, and participate in community events seamlessly.</p>
+        <hr class="my-4">
+        
+        <AuthorizeView Context="authState">
+            <Authorized>
+                <div class="d-flex align-items-center">
+                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                        @authState.User.Identity?.Name?[0].ToString().ToUpper()
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0">Logged in as: <strong>@authState.User.Identity?.Name</strong></h5>
+                        <p class="text-muted mb-0">Role: @authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</p>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <div class="row mt-4">
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <!-- Admin Quick Stats -->
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100 bg-primary text-white">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">Manage Events</h5>
+                            <p class="card-text">Create events, assign venues, and schedule activities.</p>
+                            <a href="/admin/events" class="btn btn-light btn-sm mt-3">Go to Events</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100 bg-success text-white">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">Manage Venues</h5>
+                            <p class="card-text">Review and manage site venues and audience capacities.</p>
+                            <a href="/admin/venues" class="btn btn-light btn-sm mt-3">Go to Venues</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100 bg-info text-white">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">Manage Activities</h5>
+                            <p class="card-text">Create and detail activities (Talks, Games, Workshops).</p>
+                            <a href="/admin/activities" class="btn btn-light btn-sm mt-3">Go to Activities</a>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Participant">
+            <Authorized>
+                <!-- Participant Shortcuts -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100 bg-info text-white">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">Browse Upcoming Events</h5>
+                            <p class="card-text">Explore new events, check venues, activities, and register today.</p>
+                            <a href="/participant/events" class="btn btn-light btn-sm mt-3">Browse Events</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100 bg-warning text-dark">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">My Registrations</h5>
+                            <p class="card-text">View and manage your registered events and schedules.</p>
+                            <a href="/participant/registrations" class="btn btn-dark btn-sm mt-3">View My Registrations</a>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+</div>

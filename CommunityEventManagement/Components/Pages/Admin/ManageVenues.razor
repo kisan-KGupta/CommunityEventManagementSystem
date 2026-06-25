@@ -1,0 +1,181 @@
+@page "/admin/venues"
+@using Microsoft.AspNetCore.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject IVenueService VenueService
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Venue Form -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-primary">@(selectedVenue.Id == 0 ? "Add Venue" : "Edit Venue")</h4>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success">@successMessage</div>
+                }
+
+                <EditForm Model="selectedVenue" OnValidSubmit="HandleSubmit" FormName="ManageVenuesForm">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Venue Name</label>
+                        <InputText class="form-control" @bind-Value="selectedVenue.Name" />
+                        <ValidationMessage For="@(() => selectedVenue.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <InputText class="form-control" @bind-Value="selectedVenue.Address" />
+                        <ValidationMessage For="@(() => selectedVenue.Address)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Max Capacity</label>
+                        <InputNumber class="form-control" @bind-Value="selectedVenue.Capacity" />
+                        <ValidationMessage For="@(() => selectedVenue.Capacity)" />
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            @(selectedVenue.Id == 0 ? "Save Venue" : "Update Venue")
+                        </button>
+                        @if (selectedVenue.Id != 0)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="ResetForm">Cancel</button>
+                        }
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <!-- Venues List -->
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-secondary">Venues List</h4>
+                
+                @if (venuesList.Count == 0)
+                {
+                    <p class="text-muted">No venues registered yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Venue Name</th>
+                                    <th>Address</th>
+                                    <th>Capacity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var venue in venuesList)
+                                {
+                                    <tr>
+                                        <td><strong>@venue.Name</strong></td>
+                                        <td>@venue.Address</td>
+                                        <td><span class="badge bg-secondary">@venue.Capacity</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => EditVenue(venue)">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteVenue(venue.Id)">Delete</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<VenueViewModel> venuesList = new();
+    private VenueViewModel selectedVenue = new();
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        venuesList = await VenueService.GetAllAsync();
+    }
+
+    private void EditVenue(VenueViewModel model)
+    {
+        selectedVenue = new VenueViewModel
+        {
+            Id = model.Id,
+            Name = model.Name,
+            Address = model.Address,
+            Capacity = model.Capacity
+        };
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private async Task DeleteVenue(int id)
+    {
+        try
+        {
+            await VenueService.DeleteAsync(id);
+            successMessage = "Venue deleted successfully.";
+            selectedVenue = new();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = null;
+
+            if (selectedVenue.Id == 0)
+            {
+                await VenueService.AddAsync(selectedVenue);
+                successMessage = "Venue created successfully.";
+            }
+            else
+            {
+                await VenueService.UpdateAsync(selectedVenue);
+                successMessage = "Venue updated successfully.";
+            }
+
+            selectedVenue = new();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void ResetForm()
+    {
+        selectedVenue = new();
+        errorMessage = null;
+        successMessage = null;
+    }
+}

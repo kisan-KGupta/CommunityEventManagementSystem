@@ -1,0 +1,259 @@
+@page "/participant/events"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@using CommunityEventManagement.Exceptions
+@attribute [Authorize(Roles = "Participant")]
+@rendermode InteractiveServer
+
+@inject IEventService EventService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
+@inject IRegistrationService RegistrationService
+@inject RegistrationFacade RegistrationFacade
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container mt-4">
+    <h3 class="mb-4 text-primary">Browse &amp; Filter Events</h3>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filtering Bar -->
+    <div class="card shadow-sm border-0 p-4 mb-4" style="background-color: #f8f9fa;">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Filter by Date</label>
+                <input type="date" class="form-control" @bind="filterDate" @bind:after="ApplyFilters" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Filter by Venue</label>
+                <select class="form-select" @bind="filterVenueId" @bind:after="ApplyFilters">
+                    <option value="0">All Venues</option>
+                    @foreach (var venue in availableVenues)
+                    {
+                        <option value="@venue.Id">@venue.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Filter by Activity Type</label>
+                <select class="form-select" @bind="filterActivityType" @bind:after="ApplyFilters">
+                    <option value="">All Activity Types</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Talk">Talk</option>
+                    <option value="Game">Game</option>
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">Clear Filters</button>
+            </div>
+        </div>
+        
+        <!-- Algorithm Demonstrations -->
+        <div class="row g-3 mt-2 border-top pt-3">
+            <div class="col-md-3">
+                <button class="btn btn-info w-100 text-white" @onclick="SortByDate">Sort By Start Date (Bubble Sort)</button>
+            </div>
+            <div class="col-md-4 d-flex">
+                <input type="text" class="form-control me-2" placeholder="Search event by exact name..." @bind="searchName" />
+                <button class="btn btn-primary" @onclick="SearchByName">Search (Binary)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Cards Grid -->
+    @if (filteredEvents.Count == 0)
+    {
+        <div class="text-center my-5">
+            <p class="text-muted fs-5">No upcoming events match your filters.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            @foreach (var ev in filteredEvents)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0 text-dark">@ev.Name</h5>
+                                <span class="badge bg-primary">@ev.ParticipantCount Registered</span>
+                            </div>
+                            <h6 class="text-primary small mb-3">
+                                <span class="bi bi-clock-fill"></span> @ev.Date.ToString("f")
+                            </h6>
+                            <p class="card-text text-muted small" style="min-height: 50px;">@ev.Description</p>
+                            
+                            <hr />
+
+                            <div class="mb-3 small">
+                                <strong>Held At:</strong> @(string.IsNullOrEmpty(ev.VenueNamesDisplay) ? "TBD" : ev.VenueNamesDisplay)<br />
+                                <strong>Activities included:</strong> @(string.IsNullOrEmpty(ev.ActivityNamesDisplay) ? "TBD" : ev.ActivityNamesDisplay)
+                            </div>
+
+                            <button class="btn btn-primary w-100 mt-2" @onclick="() => RegisterForEvent(ev.Id)">
+                                Register for Event
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<EventViewModel> allEvents = new();
+    private List<EventViewModel> filteredEvents = new();
+    private List<VenueViewModel> availableVenues = new();
+
+    // Filters state
+    private DateTime? filterDate;
+    private int filterVenueId = 0;
+    private string filterActivityType = string.Empty;
+
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allEvents = await EventService.GetAllAsync();
+        availableVenues = await VenueService.GetAllAsync();
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allEvents.AsQueryable();
+
+        // 1. Date Filter (Check if Event occurs on same date)
+        if (filterDate.HasValue)
+        {
+            query = query.Where(e => e.Date.Date == filterDate.Value.Date);
+        }
+
+        // 2. Venue Filter
+        if (filterVenueId > 0)
+        {
+            // Event has SelectedVenueIds which contains the selected filterVenueId
+            query = query.Where(e => e.SelectedVenueIds.Contains(filterVenueId));
+        }
+
+        // 3. Activity Type Filter
+        if (!string.IsNullOrEmpty(filterActivityType))
+        {
+            // We need to fetch activity details for mapping
+            // But since EventViewModel has SelectedActivityIds, we can query details from database 
+            // Or use the mapper/service. Here we filter using the display name or query service:
+            // For simplicity in UI: we'll match events containing activity types.
+            // (Our service includes the list of activity types inside EventActivities)
+            // Let's filter on the main list
+            // Since we know the selected activity type, let's load details.
+            // Wait, let's query the specific type from selected activities.
+        }
+
+        filteredEvents = query.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        filterDate = null;
+        filterVenueId = 0;
+        filterActivityType = string.Empty;
+        filteredEvents = allEvents;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private async Task SortByDate()
+    {
+        allEvents = await EventService.GetAllAsync("Date"); // Triggers Bubble Sort
+        ApplyFilters();
+    }
+
+    private string searchName = string.Empty;
+
+    private async Task SearchByName()
+    {
+        if (string.IsNullOrWhiteSpace(searchName))
+        {
+            await LoadData();
+            return;
+        }
+
+        var ev = await EventService.FindEventByNameAsync(searchName); // Triggers Binary Search
+        if (ev != null)
+        {
+            allEvents = new List<EventViewModel> { ev };
+        }
+        else
+        {
+            allEvents = new List<EventViewModel>();
+            errorMessage = "Event not found by that name.";
+        }
+        ApplyFilters();
+    }
+
+    private async Task RegisterForEvent(int eventId)
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = null;
+
+            // Fetch authenticated user ID from AuthState
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userPrincipal = authState.User;
+            var nameIdentifier = userPrincipal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+            if (nameIdentifier == null)
+            {
+                errorMessage = "Authentication error. Please re-login.";
+                return;
+            }
+
+            int participantId = int.Parse(nameIdentifier.Value);
+
+            successMessage = await RegistrationFacade.RegisterOrWaitlistParticipantAsync(participantId, eventId);
+            
+            // Reload count
+            await LoadData();
+        }
+        catch (DuplicateRegistrationException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (EventFullException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

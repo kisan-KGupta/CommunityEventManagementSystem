@@ -1,0 +1,143 @@
+@page "/admin/registrations"
+@using Microsoft.AspNetCore.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject IRegistrationService RegistrationService
+@inject RegistrationFacade RegistrationFacade
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary mb-0">All Event Registrations</h3>
+        <button class="btn btn-warning shadow-sm" @onclick="UndoLastCancel">
+            <span class="bi bi-arrow-counterclockwise"></span> Undo Last Cancel
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(feedbackMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @feedbackMessage
+            <button type="button" class="btn-close" @onclick="() => feedbackMessage = null"></button>
+        </div>
+    }
+
+    @if (registrationsList.Count == 0)
+    {
+        <p class="text-muted">No registrations found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Participant</th>
+                        <th>Email</th>
+                        <th>Event Name</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reg in registrationsList)
+                    {
+                        <tr>
+                            <td><strong>@reg.ParticipantName</strong></td>
+                            <td>@reg.ParticipantEmail</td>
+                            <td>@reg.EventName</td>
+                            <td>@reg.RegistrationDate.ToString("g")</td>
+                            <td>
+                                <span class="badge @(reg.Status == "Confirmed" ? "bg-success" : reg.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
+                                    @reg.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (reg.Status == "Pending")
+                                {
+                                    <button class="btn btn-sm btn-success me-1" @onclick='() => UpdateStatus(reg.Id, "Confirmed")'>Confirm</button>
+                                }
+                                @if (reg.Status != "Cancelled")
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" @onclick='() => CancelRegistration(reg.Id)'>Cancel</button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">None</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="mt-5">
+        <h4 class="text-secondary">Audit Logs (LinkedList Demo)</h4>
+        <ul class="list-group">
+            @foreach(var log in RegistrationFacade.GetAuditLogs())
+            {
+                <li class="list-group-item">@log</li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    private List<RegistrationViewModel> registrationsList = new();
+    private string? feedbackMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        registrationsList = await RegistrationService.GetAllAsync();
+    }
+
+    private async Task UpdateStatus(int id, string status)
+    {
+        try
+        {
+            await RegistrationService.UpdateStatusAsync(id, status);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            feedbackMessage = ex.Message;
+        }
+    }
+
+    private async Task CancelRegistration(int id)
+    {
+        try
+        {
+            await RegistrationFacade.CancelRegistrationAsync(id);
+            feedbackMessage = "Registration cancelled. Click 'Undo' if this was a mistake.";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            feedbackMessage = ex.Message;
+        }
+    }
+
+    private async Task UndoLastCancel()
+    {
+        try
+        {
+            feedbackMessage = await RegistrationFacade.UndoLastRegistrationAsync();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            feedbackMessage = ex.Message;
+        }
+    }
+}

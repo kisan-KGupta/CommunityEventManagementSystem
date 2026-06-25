@@ -1,0 +1,255 @@
+@page "/admin/events"
+@using Microsoft.AspNetCore.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@using CommunityEventManagement.Exceptions
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject IEventService EventService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Event Form Section -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-primary">@(selectedEvent.Id == 0 ? "Add Event" : "Edit Event")</h4>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success">@successMessage</div>
+                }
+
+                <EditForm Model="selectedEvent" OnValidSubmit="HandleSubmit" FormName="ManageEventsForm">
+                    <!-- Validation Concept: Client-side Validation using HTML properties and Data Annotations -->
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Event Name</label>
+                        <InputText class="form-control" @bind-Value="selectedEvent.Name" />
+                        <ValidationMessage For="@(() => selectedEvent.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Event Date &amp; Time</label>
+                        <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="selectedEvent.Date" />
+                        <ValidationMessage For="@(() => selectedEvent.Date)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <InputTextArea class="form-control" rows="3" @bind-Value="selectedEvent.Description" />
+                        <ValidationMessage For="@(() => selectedEvent.Description)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Venues (Hold Ctrl to select multiple)</label>
+                        <select class="form-select" multiple @onchange="OnVenueSelectionChanged" style="height: 100px;">
+                            @foreach (var venue in availableVenues)
+                            {
+                                <option value="@venue.Id" selected="@selectedEvent.SelectedVenueIds.Contains(venue.Id)">
+                                    @venue.Name (Cap: @venue.Capacity)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Activities (Hold Ctrl to select multiple)</label>
+                        <select class="form-select" multiple @onchange="OnActivitySelectionChanged" style="height: 100px;">
+                            @foreach (var act in availableActivities)
+                            {
+                                <option value="@act.Id" selected="@selectedEvent.SelectedActivityIds.Contains(act.Id)">
+                                    @act.Name (@act.Type)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            @(selectedEvent.Id == 0 ? "Save Event" : "Update Event")
+                        </button>
+                        @if (selectedEvent.Id != 0)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="ResetForm">Cancel</button>
+                        }
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <!-- Events List Table -->
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 p-4">
+                <h4 class="mb-4 text-secondary">Events List</h4>
+                
+                @if (eventsList.Count == 0)
+                {
+                    <p class="text-muted">No events found. Add one on the left!</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Event Details</th>
+                                    <th>Venues &amp; Activities</th>
+                                    <th>Registrations</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ev in eventsList)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@ev.Name</strong><br />
+                                            <span class="text-muted small">@ev.Date.ToString("g")</span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                <strong>Venues:</strong> @(string.IsNullOrEmpty(ev.VenueNamesDisplay) ? "None" : ev.VenueNamesDisplay)<br />
+                                                <strong>Activities:</strong> @(string.IsNullOrEmpty(ev.ActivityNamesDisplay) ? "None" : ev.ActivityNamesDisplay)
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@ev.ParticipantCount registered</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => EditEvent(ev)">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEvent(ev.Id)">Delete</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<EventViewModel> eventsList = new();
+    private List<VenueViewModel> availableVenues = new();
+    private List<ActivityViewModel> availableActivities = new();
+
+    private EventViewModel selectedEvent = new();
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        eventsList = await EventService.GetAllAsync();
+        availableVenues = await VenueService.GetAllAsync();
+        availableActivities = await ActivityService.GetAllAsync();
+    }
+
+    private void EditEvent(EventViewModel model)
+    {
+        selectedEvent = new EventViewModel
+        {
+            Id = model.Id,
+            Name = model.Name,
+            Date = model.Date,
+            Description = model.Description,
+            SelectedVenueIds = new List<int>(model.SelectedVenueIds),
+            SelectedActivityIds = new List<int>(model.SelectedActivityIds)
+        };
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        try
+        {
+            await EventService.DeleteAsync(id);
+            successMessage = "Event deleted successfully.";
+            selectedEvent = new();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = null;
+
+            if (selectedEvent.Id == 0)
+            {
+                await EventService.AddAsync(selectedEvent);
+                successMessage = "Event created successfully.";
+            }
+            else
+            {
+                await EventService.UpdateAsync(selectedEvent);
+                successMessage = "Event updated successfully.";
+            }
+
+            selectedEvent = new();
+            await LoadData();
+        }
+        catch (DuplicateEventException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            // Exception Concept: Built-in Exception
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            // Exception Concept: try-catch-finally block (ensure execution of cleanup)
+            Console.WriteLine("Event operation attempted at " + System.DateTime.UtcNow);
+        }
+    }
+
+    private void ResetForm()
+    {
+        selectedEvent = new();
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void OnVenueSelectionChanged(ChangeEventArgs e)
+    {
+        var values = (string[]?)e.Value;
+        if (values != null)
+        {
+            selectedEvent.SelectedVenueIds = values.Select(int.Parse).ToList();
+        }
+    }
+
+    private void OnActivitySelectionChanged(ChangeEventArgs e)
+    {
+        var values = (string[]?)e.Value;
+        if (values != null)
+        {
+            selectedEvent.SelectedActivityIds = values.Select(int.Parse).ToList();
+        }
+    }
+}

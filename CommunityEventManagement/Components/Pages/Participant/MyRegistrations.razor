@@ -1,0 +1,107 @@
+@page "/participant/registrations"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using CommunityEventManagement.Models.ViewModels
+@using CommunityEventManagement.Services
+@attribute [Authorize(Roles = "Participant")]
+@rendermode InteractiveServer
+
+@inject IRegistrationService RegistrationService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container mt-4">
+    <h3 class="mb-4 text-primary">My Registrations</h3>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (myRegistrations.Count == 0)
+    {
+        <div class="text-center my-5">
+            <p class="text-muted">You have not registered for any events yet.</p>
+            <a href="/participant/events" class="btn btn-primary mt-2">Browse Events</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Event Date</th>
+                        <th>Registered Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reg in myRegistrations)
+                    {
+                        <tr>
+                            <td><strong>@reg.EventName</strong></td>
+                            <td>@reg.EventDate.ToString("g")</td>
+                            <td>@reg.RegistrationDate.ToString("d")</td>
+                            <td>
+                                <span class="badge @(reg.Status == "Confirmed" ? "bg-success" : reg.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
+                                    @reg.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (reg.Status == "Confirmed")
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => CancelBooking(reg.Id)">
+                                        Cancel Registration
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<RegistrationViewModel> myRegistrations = new();
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRegistrations();
+    }
+
+    private async Task LoadRegistrations()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var nameIdentifier = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+        if (nameIdentifier != null)
+        {
+            int participantId = int.Parse(nameIdentifier.Value);
+            myRegistrations = await RegistrationService.GetByParticipantIdAsync(participantId);
+        }
+    }
+
+    private async Task CancelBooking(int id)
+    {
+        try
+        {
+            await RegistrationService.CancelRegistrationAsync(id);
+            successMessage = "Registration cancelled successfully.";
+            await LoadRegistrations();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}
