@@ -1,7 +1,12 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\AssignmentOnGoing\\CommunityEventSolution\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\Kumar_kisan\\CommunityEventSolution\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{913B30FC-498B-4892-82AA-1ED2AC99C847}|CommunityEventManagement\\CommunityEventManagement.csproj|c:\\kumar_kisan\\communityeventsolution\\communityeventmanagement\\services\\registrationfacade.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{913B30FC-498B-4892-82AA-1ED2AC99C847}|CommunityEventManagement\\CommunityEventManagement.csproj|solutionrelative:communityeventmanagement\\services\\registrationfacade.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,11 +14,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "RegistrationFacade.cs",
+              "DocumentMoniker": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\Services\\RegistrationFacade.cs",
+              "RelativeDocumentMoniker": "CommunityEventManagement\\Services\\RegistrationFacade.cs",
+              "ToolTip": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\Services\\RegistrationFacade.cs",
+              "RelativeToolTip": "CommunityEventManagement\\Services\\RegistrationFacade.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-03T17:14:37.321Z",
+              "EditorCaption": ""
             }
           ]
         }

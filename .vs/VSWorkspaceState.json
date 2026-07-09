@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\.github",
+    "\\CommunityEventManagement",
+    "\\CommunityEventManagement.Tests",
+    "\\CommunityEventManagement\\Services"
+  ],
+  "PreviewInSolutionExplorer": false
+}

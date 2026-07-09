@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "dXZ5IfIDdog=",
+  "dgSpecHash": "6k9t7Q2ip4E=",
   "success": true,
-  "projectFilePath": "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
+  "projectFilePath": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\admin\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\admin\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

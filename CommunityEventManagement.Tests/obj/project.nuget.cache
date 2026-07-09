@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "mr7hBtbKUmU=",
+  "dgSpecHash": "Xf7uBgctnVU=",
   "success": true,
-  "projectFilePath": "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement.Tests\\CommunityEventManagement.Tests.csproj",
+  "projectFilePath": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement.Tests\\CommunityEventManagement.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\admin\\.nuget\\packages\\anglesharp\\1.4.0\\anglesharp.1.4.0.nupkg.sha512",
     "C:\\Users\\admin\\.nuget\\packages\\anglesharp.css\\1.0.0-beta.157\\anglesharp.css.1.0.0-beta.157.nupkg.sha512",

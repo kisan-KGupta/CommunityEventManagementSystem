@@ -3,83 +3,244 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize]
 @rendermode InteractiveServer
-<div class="container mt-4">
-    <div class="jumbotron p-5 mb-4 bg-light rounded-3 shadow-sm" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
-        <h1 class="display-4 fw-bold">Community Event Management</h1>
-        <p class="lead">Plan, organize, and participate in community events seamlessly.</p>
-        <hr class="my-4">
-        
-        <AuthorizeView Context="authState">
-            <Authorized>
-                <div class="d-flex align-items-center">
-                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.5rem;">
-                        @authState.User.Identity?.Name?[0].ToString().ToUpper()
+@inject CommunityEventManagement.Services.IEventService EventService
+@inject CommunityEventManagement.Services.IVenueService VenueService
+<div class="container-fluid py-4 px-lg-5">
+    <!-- Welcome Banner (Glassmorphism) -->
+    <div class="glass-card p-5 mb-5 position-relative overflow-hidden">
+        <div class="position-relative z-index-1">
+            <h1 class="display-4 fw-bold gradient-text mb-3">Welcome to Community Connect</h1>
+            <p class="lead text-muted mb-4">Discover, organize, and participate in local events that bring us together.</p>
+            
+            <AuthorizeView Context="authState">
+                <Authorized>
+                    <div class="d-flex align-items-center mt-3 p-3 bg-white rounded-3 shadow-sm d-inline-flex">
+                        <div class="avatar gradient-bg text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            @authState.User.Identity?.Name?[0].ToString().ToUpper()
+                        </div>
+                        <div class="ms-3 pe-4">
+                            <h5 class="mb-0 fw-bold">@authState.User.Identity?.Name</h5>
+                            <span class="badge gradient-bg-success mt-1">@authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        </div>
                     </div>
-                    <div class="ms-3">
-                        <h5 class="mb-0">Logged in as: <strong>@authState.User.Identity?.Name</strong></h5>
-                        <p class="text-muted mb-0">Role: @authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</p>
-                    </div>
-                </div>
-            </Authorized>
-        </AuthorizeView>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+        <!-- Decorative background circle -->
+        <div class="position-absolute rounded-circle gradient-bg opacity-10" style="width: 300px; height: 300px; top: -100px; right: -50px; z-index: 0;"></div>
     </div>
 
-    <div class="row mt-4">
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <!-- Admin Quick Stats -->
-                <div class="col-md-4 mb-4">
-                    <div class="card border-0 shadow-sm h-100 bg-primary text-white">
-                        <div class="card-body p-4">
-                            <h5 class="card-title">Manage Events</h5>
-                            <p class="card-text">Create events, assign venues, and schedule activities.</p>
-                            <a href="/admin/events" class="btn btn-light btn-sm mt-3">Go to Events</a>
+    <!-- Admin Dashboard -->
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <h4 class="fw-bold mb-4"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard Overview</h4>
+            
+            <!-- KPI Cards -->
+            <div class="row mb-5">
+                <div class="col-md-4 mb-3">
+                    <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Total Upcoming Events</h6>
+                                <h2 class="fw-bold mb-0">@totalEvents</h2>
+                            </div>
+                            <div class="icon-circle gradient-bg text-white shadow mb-0">
+                                <i class="bi bi-calendar-event"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
-                    <div class="card border-0 shadow-sm h-100 bg-success text-white">
-                        <div class="card-body p-4">
-                            <h5 class="card-title">Manage Venues</h5>
-                            <p class="card-text">Review and manage site venues and audience capacities.</p>
-                            <a href="/admin/venues" class="btn btn-light btn-sm mt-3">Go to Venues</a>
+                <div class="col-md-4 mb-3">
+                    <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Active Venues</h6>
+                                <h2 class="fw-bold mb-0">@totalVenues</h2>
+                            </div>
+                            <div class="icon-circle gradient-bg-success text-white shadow mb-0">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
-                    <div class="card border-0 shadow-sm h-100 bg-info text-white">
-                        <div class="card-body p-4">
-                            <h5 class="card-title">Manage Activities</h5>
-                            <p class="card-text">Create and detail activities (Talks, Games, Workshops).</p>
-                            <a href="/admin/activities" class="btn btn-light btn-sm mt-3">Go to Activities</a>
+                <div class="col-md-4 mb-3">
+                    <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-2">Registered Participants</h6>
+                                <h2 class="fw-bold mb-0">156</h2>
+                            </div>
+                            <div class="icon-circle gradient-bg-warning text-white shadow mb-0">
+                                <i class="bi bi-people"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </Authorized>
-        </AuthorizeView>
+            </div>
 
-        <AuthorizeView Roles="Participant">
-            <Authorized>
-                <!-- Participant Shortcuts -->
-                <div class="col-md-6 mb-4">
-                    <div class="card border-0 shadow-sm h-100 bg-info text-white">
-                        <div class="card-body p-4">
-                            <h5 class="card-title">Browse Upcoming Events</h5>
-                            <p class="card-text">Explore new events, check venues, activities, and register today.</p>
-                            <a href="/participant/events" class="btn btn-light btn-sm mt-3">Browse Events</a>
+            <h4 class="fw-bold mb-4"><i class="bi bi-gear me-2 text-primary"></i>Quick Management</h4>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="glass-card h-100 p-4 border-top border-4 border-primary">
+                        <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-calendar-plus"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3">Events</h5>
+                        <p class="text-muted">Create events, assign venues, and schedule activities.</p>
+                        <a href="/admin/events" class="btn btn-outline-primary mt-auto w-100 rounded-pill fw-medium">Manage Events <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="glass-card h-100 p-4 border-top border-4 border-success">
+                        <div class="icon-circle bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3">Venues</h5>
+                        <p class="text-muted">Review and manage site venues and audience capacities.</p>
+                        <a href="/admin/venues" class="btn btn-outline-success mt-auto w-100 rounded-pill fw-medium">Manage Venues <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="glass-card h-100 p-4 border-top border-4 border-info">
+                        <div class="icon-circle bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-list-stars"></i>
+                        </div>
+                        <h5 class="fw-bold mt-3">Activities</h5>
+                        <p class="text-muted">Create and detail activities (Talks, Games, Workshops).</p>
+                        <a href="/admin/activities" class="btn btn-outline-info mt-auto w-100 rounded-pill fw-medium">Manage Activities <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <!-- Participant Dashboard -->
+    <AuthorizeView Roles="Participant">
+        <Authorized>
+            <div class="row mb-5">
+                <!-- Countdown & Action -->
+                <div class="col-lg-8 mb-4">
+                    <div class="glass-card p-4 h-100 gradient-bg text-white shadow-lg">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <div>
+                                <span class="badge bg-white text-primary mb-3">Up Next</span>
+                                <h3 class="fw-bold">Summer Tech Meetup</h3>
+                                <p class="opacity-75"><i class="bi bi-geo-alt me-2"></i>Community Center Hall A</p>
+                            </div>
+                            <div class="d-flex align-items-end justify-content-between mt-4">
+                                <div>
+                                    <p class="mb-1 opacity-75 small text-uppercase fw-bold">Starts In</p>
+                                    <h4 class="mb-0 fw-bold">2 Days, 4 Hours</h4>
+                                </div>
+                                <a href="/participant/registrations" class="btn btn-light rounded-pill px-4 fw-bold text-primary shadow-sm">View Details</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card border-0 shadow-sm h-100 bg-warning text-dark">
-                        <div class="card-body p-4">
-                            <h5 class="card-title">My Registrations</h5>
-                            <p class="card-text">View and manage your registered events and schedules.</p>
-                            <a href="/participant/registrations" class="btn btn-dark btn-sm mt-3">View My Registrations</a>
+                <!-- Announcements -->
+                <div class="col-lg-4 mb-4">
+                    <div class="glass-card p-4 h-100 border-start border-4 border-warning">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-megaphone me-2 text-warning"></i>Announcements</h5>
+                        <div class="alert alert-light border-0 shadow-sm rounded-3 py-2 px-3 mb-2">
+                            <small class="text-muted d-block mb-1">Today</small>
+                            <span class="fw-medium small">New venue added for the Arts & Crafts festival!</span>
+                        </div>
+                        <div class="alert alert-light border-0 shadow-sm rounded-3 py-2 px-3 mb-0">
+                            <small class="text-muted d-block mb-1">Yesterday</small>
+                            <span class="fw-medium small">Reminder: Complete your profile for better event recommendations.</span>
                         </div>
                     </div>
                 </div>
-            </Authorized>
-        </AuthorizeView>
-    </div>
+            </div>
+
+            <!-- Available Event Types -->
+            <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                <h4 class="fw-bold mb-0"><i class="bi bi-grid me-2 text-primary"></i>Browse by Event Type</h4>
+                <a href="/participant/events" class="text-decoration-none fw-medium text-primary">View All Events <i class="bi bi-arrow-right"></i></a>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="event-type-card shadow-sm h-100">
+                        <i class="bi bi-laptop"></i>
+                        <h6 class="fw-bold mb-1">Workshops</h6>
+                        <small class="text-muted">Learn new skills</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="event-type-card shadow-sm h-100">
+                        <i class="bi bi-mic"></i>
+                        <h6 class="fw-bold mb-1">Talks & Seminars</h6>
+                        <small class="text-muted">Expert insights</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="event-type-card shadow-sm h-100">
+                        <i class="bi bi-controller"></i>
+                        <h6 class="fw-bold mb-1">Games & E-Sports</h6>
+                        <small class="text-muted">Fun & competition</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="event-type-card shadow-sm h-100">
+                        <i class="bi bi-heart-pulse"></i>
+                        <h6 class="fw-bold mb-1">Health & Wellness</h6>
+                        <small class="text-muted">Stay active</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <a href="/participant/events" class="text-decoration-none">
+                        <div class="glass-card p-3 d-flex align-items-center">
+                            <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-0 me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <div class="text-dark">
+                                <h6 class="mb-0 fw-bold">Browse Events</h6>
+                                <small class="text-muted">Find your next activity</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="/participant/registrations" class="text-decoration-none">
+                        <div class="glass-card p-3 d-flex align-items-center">
+                            <div class="icon-circle bg-success bg-opacity-10 text-success mb-0 me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-bookmark-check"></i>
+                            </div>
+                            <div class="text-dark">
+                                <h6 class="mb-0 fw-bold">My Registrations</h6>
+                                <small class="text-muted">Manage your tickets</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
 </div>
+
+@code {
+    private int totalEvents = 0;
+    private int totalVenues = 0;
+    private int totalParticipants = 156; // Mock data for now if Participant service is not easily accessible
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            var events = await EventService.GetAllAsync();
+            totalEvents = events?.Count ?? 0;
+
+            var venues = await VenueService.GetAllAsync();
+            totalVenues = venues?.Count ?? 0;
+        }
+        catch 
+        {
+            // fallback in case of errors
+        }
+    }
+}

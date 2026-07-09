@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj": {}
+    "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj": {}
   },
   "projects": {
-    "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj": {
+    "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
+        "projectUniqueName": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
         "projectName": "CommunityEventManagement",
-        "projectPath": "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
+        "projectPath": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\CommunityEventManagement.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "C:\\AssignmentOnGoing\\CommunityEventSolution\\CommunityEventManagement\\obj\\",
+        "outputPath": "C:\\Kumar_kisan\\CommunityEventSolution\\CommunityEventManagement\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

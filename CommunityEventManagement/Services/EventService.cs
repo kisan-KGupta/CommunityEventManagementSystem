@@ -108,7 +108,7 @@ namespace CommunityEventManagement.Services
                 }
             }
 
-            return null; // Not found
+            return null!; // Not found
         }
 
         public async Task<EventViewModel> GetByIdAsync(int id)
